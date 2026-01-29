@@ -3,61 +3,59 @@ import { supabase } from '../lib/supabaseClient';
 
 export default function Explore() {
   const [fornecedores, setFornecedores] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // Função assíncrona para ler o banco
-  const fetchFornecedores = async () => {
-    try {
-      setCarregando(true);
-      // Aqui o Supabase faz o "SELECT * FROM fornecedores"
+  // Busca os dados no Supabase ao carregar
+  useEffect(() => {
+    const fetchFornecedores = async () => {
+      setLoading(true);
       const { data, error } = await supabase
         .from('fornecedores')
         .select('*');
 
-      if (error) throw error;
-      setFornecedores(data);
-    } catch (err) {
-      console.error("Erro na busca:", err.message);
-    } finally {
-      setCarregando(false);
-    }
-  };
+      if (!error) setFornecedores(data);
+      setLoading(false);
+    };
 
-  // Dispara a função uma única vez ao carregar a página
-  useEffect(() => {
     fetchFornecedores();
   }, []);
 
-  if (carregando) return <div className="p-10 text-center">Carregando eventos...</div>;
+  if (loading) return <div className="p-20 text-center font-bold">Carregando eventos...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Fornecedores Disponíveis</h1>
-      
-      {fornecedores.length === 0 ? (
-        <p className="text-gray-500">Nenhum fornecedor cadastrado ainda.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {fornecedores.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-              {/* Mostra a primeira imagem do array que salvamos */}
+    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+      <header className="mb-10 text-center">
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Descubra Espaços Incríveis</h1>
+        <p className="text-gray-500 mt-2">Os melhores buffets e salões para sua festa em 2026.</p>
+      </header>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {fornecedores.map((f) => (
+          <div key={f.id} className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 group">
+            <div className="relative h-64 overflow-hidden">
               <img 
-                src={item.imagens?.[0] || 'https://via.placeholder.com/400x250'} 
-                className="w-full h-48 object-cover"
-                alt={item.nome}
+                src={f.imagens?.[0] || 'https://via.placeholder.com/600x400?text=Sem+Imagem'} 
+                alt={f.nome}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
-              <div className="p-4">
-                <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">{item.tipo}</span>
-                <h3 className="text-xl font-bold text-gray-900 mt-1">{item.nome}</h3>
-                <p className="text-gray-600 mt-2 font-medium">R$ {item.preco}</p>
-                <button className="mt-4 w-full py-2 border-2 border-indigo-600 text-indigo-600 rounded-lg font-bold hover:bg-indigo-600 hover:text-white transition">
-                  Ver Detalhes
-                </button>
+              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase text-indigo-600">
+                {f.tipo}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-800">{f.nome}</h3>
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className="text-sm text-gray-500 font-medium">A partir de</span>
+                <span className="text-2xl font-black text-indigo-600">R$ {f.preco}</span>
+              </div>
+              <button className="w-full mt-6 bg-gray-900 text-white py-3 rounded-2xl font-bold hover:bg-indigo-600 transition-colors">
+                Ver Portfólio Completo
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
