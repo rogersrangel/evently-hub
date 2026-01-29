@@ -3,6 +3,8 @@ import Navbar from './components/Navbar'; // Importamos a nova Navbar
 import RegisterService from './pages/RegisterService';
 import Dashboard from './pages/Dashboard';
 import Explore from './pages/Explore';
+import Details from './pages/Details';
+
 
 function Home() {
   return (
@@ -29,6 +31,7 @@ function App() {
   <Route path="/explorar" element={<Explore/>} />
   <Route path="/registrar" element={<RegisterService />} />
   <Route path="/dashboard" element={<Dashboard />} /> {/* Nova linha */}
+  <Route path="/fornecedor/:id" element={<Details />} />
 </Routes>
       </div>
     </BrowserRouter>
