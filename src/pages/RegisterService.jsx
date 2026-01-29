@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient'; // A ponte para o banco
 
 export default function RegisterService() {
   const [formData, setFormData] = useState({
@@ -32,6 +33,32 @@ export default function RegisterService() {
       imagens: formData.imagens.filter((_, index) => index !== indexToRemove)
     });
   };
+
+const handleSalvar = async () => {
+  if (!supabase) {
+    alert("Erro: Conexão com o banco não configurada corretamente.");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('fornecedores')
+    .insert([
+      { 
+        nome: formData.nome, 
+        tipo: formData.tipo, 
+        preco: parseFloat(formData.preco) || 0, // Garante que é número
+        imagens: formData.imagens 
+      }
+    ]);
+
+  if (error) {
+    alert("Erro ao salvar: " + error.message);
+  } else {
+    alert("Perfil publicado com sucesso!");
+    // Limpa o formulário após salvar
+    setFormData({ nome: '', tipo: 'buffet', imagens: [] });
+  }
+};
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-sm rounded-2xl mt-10 border border-gray-100">
@@ -89,9 +116,12 @@ export default function RegisterService() {
           </div>
         </div>
 
-        <button className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition">
-          Finalizar e Publicar Perfil
-        </button>
+        <button 
+  onClick={handleSalvar} // Chama a função que criamos acima
+  className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition"
+>
+  Finalizar e Publicar Perfil
+</button>
       </div>
     </div>
   );
