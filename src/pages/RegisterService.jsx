@@ -1,53 +1,98 @@
-import { useState } from 'react'; // Hook para o React "lembrar" o que digitamos
+import { useState } from 'react';
 
 export default function RegisterService() {
-  // Criamos um estado para o formulário. 
-  // O React começa com esses campos vazios.
   const [formData, setFormData] = useState({
     nome: '',
-    tipo: 'buffet'
+    tipo: 'buffet',
+    imagens: [] // Agora temos uma lista de imagens vazia
   });
 
-  // Essa função roda toda vez que você digita algo
+  const [currentImg, setCurrentImg] = useState(''); // Guarda o link que está sendo digitado agora
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Atualizamos o estado mantendo o que já tinha (...formData) 
-    // e trocando apenas o campo que mudou [name]
     setFormData({ ...formData, [name]: value });
   };
 
+  // Função para adicionar imagem na lista
+  const addImage = () => {
+    if (currentImg.trim() !== "") {
+      setFormData({
+        ...formData,
+        imagens: [...formData.imagens, currentImg] // Pega as fotos que já tinha e adiciona a nova
+      });
+      setCurrentImg(''); // Limpa o campo de digitar após adicionar
+    }
+  };
+
+  // Função para remover uma imagem específica
+  const removeImage = (indexToRemove) => {
+    setFormData({
+      ...formData,
+      imagens: formData.imagens.filter((_, index) => index !== indexToRemove)
+    });
+  };
+
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-lg mt-10">
-      <h2 className="text-xl font-bold mb-4">Cadastro de Fornecedor</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow-sm rounded-2xl mt-10 border border-gray-100">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Meu Portfólio</h2>
       
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Campo Nome */}
-        <input
-          name="nome"
-          placeholder="Nome do seu negócio"
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Nome do Negócio</label>
+          <input
+            name="nome"
+            className="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+            onChange={handleChange}
+            placeholder="Ex: Buffet Mágico"
+          />
+        </div>
 
-        {/* Campo Tipo */}
-        <select 
-          name="tipo" 
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        >
-          <option value="buffet">Buffet</option>
-          <option value="espaco">Espaço de Eventos</option>
-        </select>
+        {/* Seção de Imagens */}
+        <div className="bg-gray-50 p-4 rounded-xl">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Adicionar Fotos (URL)</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="flex-1 p-2 border rounded-lg outline-none focus:border-indigo-500"
+              placeholder="Cole o link da foto aqui..."
+              value={currentImg}
+              onChange={(e) => setCurrentImg(e.target.value)}
+            />
+            <button 
+              type="button"
+              onClick={addImage}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            >
+              Adicionar
+            </button>
+          </div>
 
-        <button className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-          Cadastrar
+          {/* Galeria de Miniaturas (Preview) */}
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            {formData.imagens.map((url, index) => (
+              <div key={index} className="relative group">
+                <img 
+                  src={url} 
+                  alt="Preview" 
+                  className="h-24 w-full object-cover rounded-lg border"
+                />
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"
+                >
+                  X
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition">
+          Finalizar e Publicar Perfil
         </button>
       </div>
-
-      {/* Visualização para aprendizado: mostra o dado mudando no código */}
-      <p className="mt-4 text-sm text-gray-500">
-        Digitando agora: {formData.nome} ({formData.tipo})
-      </p>
     </div>
   );
 }
