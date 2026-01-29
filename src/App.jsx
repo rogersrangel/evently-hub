@@ -1,30 +1,32 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'; // Ferramentas de navegação
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar'; // Importamos a nova Navbar
 import RegisterService from './pages/RegisterService';
 
-// Vamos criar uma página simples de "Home" aqui dentro mesmo por enquanto
 function Home() {
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-4xl font-bold text-indigo-600">EventlyHub</h1>
-      <p className="text-gray-600 mt-2">Encontre o melhor buffet ou espaço para seu evento.</p>
-      <a href="/registrar" className="mt-4 bg-indigo-500 text-white px-4 py-2 rounded">
-        Sou Fornecedor (Cadastrar)
-      </a>
+    <div className="flex flex-col items-center justify-center h-[80vh] text-center px-4">
+      <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight">
+        O lugar onde seu <span className="text-indigo-600">evento</span> começa.
+      </h1>
+      <p className="text-xl text-gray-600 mt-4 max-w-2xl">
+        Conectamos você aos melhores buffets e espaços de eventos em um só lugar. 
+        Simples, rápido e seguro.
+      </p>
     </div>
   );
 }
 
 function App() {
   return (
-    // O BrowserRouter envolve todo o app para permitir navegação
     <BrowserRouter>
-      <Routes>
-        {/* Quando o link for apenas '/', mostra a Home */}
-        <Route path="/" element={<Home />} />
+      <div className="min-h-screen bg-gray-50">
+        <Navbar /> {/* Ela fica aqui para aparecer em todas as rotas */}
         
-        {/* Quando o link for '/registrar', mostra o formulário */}
-        <Route path="/registrar" element={<RegisterService />} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/registrar" element={<RegisterService />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
