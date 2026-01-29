@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar'; // Importamos a nova Navbar
 import RegisterService from './pages/RegisterService';
+import Dashboard from './pages/Dashboard';
 
 function Home() {
   return (
@@ -22,10 +23,11 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Navbar /> {/* Ela fica aqui para aparecer em todas as rotas */}
         
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/registrar" element={<RegisterService />} />
-        </Routes>
+<Routes>
+  <Route path="/" element={<Home />} />
+  <Route path="/registrar" element={<RegisterService />} />
+  <Route path="/dashboard" element={<Dashboard />} /> {/* Nova linha */}
+</Routes>
       </div>
     </BrowserRouter>
   );
