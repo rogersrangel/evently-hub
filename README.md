@@ -17,3 +17,10 @@ Plataforma SaaS para gestão de eventos e marketplace de buffets e espaços.
 - [ ] Setup do Ambiente
 - [ ] Landing Page com Filtros
 - [ ] Dashboard do Fornecedor (SaaS)
+
+## 🎨 Visão de Design (Futuro)
+- **Estética:** Estilo "Event-Driven" (vibrante, festivo, mas limpo).
+- **UI/UX:** Referência Envato/Modern SaaS.
+- **Efeitos:** Micro-interações, Glassmorphism avançado e transições suaves entre rotas.
+- **Mobile First:** Componentes adaptáveis para versão App (PWA).
+- **Theming:** Cores que remetam a celebração (Indigo, Violeta e Gold accents).

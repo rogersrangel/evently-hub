@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar'; // Importamos a nova Navbar
 import RegisterService from './pages/RegisterService';
 import Dashboard from './pages/Dashboard';
+import Explore from './pages/Explore';
 
 function Home() {
   return (
@@ -25,6 +26,7 @@ function App() {
         
 <Routes>
   <Route path="/" element={<Home />} />
+  <Route path="/explorar" element={<Explore/>} />
   <Route path="/registrar" element={<RegisterService />} />
   <Route path="/dashboard" element={<Dashboard />} /> {/* Nova linha */}
 </Routes>
