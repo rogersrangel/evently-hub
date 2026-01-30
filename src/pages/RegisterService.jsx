@@ -8,13 +8,29 @@ export default function RegisterService() {
   const [form, setForm] = useState({ nome: '', preco: '', descricao: '', localizacao: '' });
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('fornecedores').insert([{ ...form, user_id: user.id }]);
-    if (!error) navigate('/dashboard');
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Faça login primeiro!");
 
+  const { error } = await supabase
+    .from('fornecedores')
+    .insert([{ 
+      nome: form.nome, 
+      preco: Number(form.preco), 
+      localizacao: form.localizacao,
+      descricao: form.descricao,
+      tipo: 'Espaço', // Valor padrão para preencher a coluna 'tipo'
+      user_id: user.id 
+    }]);
+
+  if (error) {
+    alert("Erro: " + error.message);
+  } else {
+    navigate('/dashboard');
+  }
+};
   return (
     <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-6">
       <div className="max-w-2xl mx-auto">
