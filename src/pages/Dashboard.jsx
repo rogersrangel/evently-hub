@@ -17,6 +17,25 @@ export default function Dashboard() {
     fetchMeusDados();
   }, []);
 
+  
+
+ // Função para remover um serviço do banco e da tela
+  const deleteService = async (id) => {
+    if (window.confirm("Tem certeza que deseja remover este anúncio?")) {
+      const { error } = await supabase
+        .from('fornecedores')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert("Erro ao deletar: " + error.message);
+      } else {
+        // Atualiza a lista na tela removendo o item deletado
+        setMeusServicos(prev => prev.filter(s => s.id !== id));
+      }
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
       <div className="flex justify-between items-center mb-16">
@@ -39,7 +58,11 @@ export default function Dashboard() {
             </div>
             <div className="text-right">
               <p className="text-indigo-600 font-black mb-2 text-lg">R$ {s.preco}</p>
-              <button className="text-red-400 hover:text-red-600 transition-colors"><Trash2 size={20}/></button>
+              <button 
+              onClick={() => deleteService(s.id)}
+              className="text-red-400 hover:text-red-600 transition-colors">
+                <Trash2 size={20}/>
+                </button>
             </div>
           </div>
         ))}

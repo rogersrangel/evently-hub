@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Star, Filter, Loader2 } from 'lucide-react';
+import { MapPin, Star, Filter, Search } from 'lucide-react'; // Adicionado o ícone Search
 
 export default function Explore() {
   const [servicos, setServicos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState(''); // [LINHA ADICIONADA] Estado para o texto da busca
 
   useEffect(() => {
     async function fetchServicos() {
@@ -24,47 +25,71 @@ export default function Explore() {
         setLoading(false);
       }
     }
-
     fetchServicos();
   }, []);
 
+  // [BLOCO ADICIONADO] Lógica que filtra a lista original baseada no que o usuário digita
+  const servicosFiltrados = servicos.filter(s => 
+    s.nome.toLowerCase().includes(busca.toLowerCase()) || 
+    s.localizacao?.toLowerCase().includes(busca.toLowerCase())
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-600" size={40} />
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="h-20 w-64 bg-slate-200 animate-pulse rounded-2xl mb-12" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-[400px] bg-slate-200 animate-pulse rounded-[2.5rem]" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 gap-8">
         <div>
           <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Explorar</h1>
           <p className="text-slate-500 font-medium mt-2">Descubra os espaços mais incríveis para o seu próximo evento.</p>
         </div>
-        <button className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl font-bold hover:bg-slate-50 transition-all shadow-sm">
-          <Filter size={18} /> Filtros
-        </button>
+
+        {/* [BLOCO ADICIONADO] Barra de Busca Visual */}
+        <div className="flex w-full lg:w-auto gap-4">
+          <div className="relative flex-1 lg:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input 
+              type="text"
+              placeholder="Nome ou cidade..."
+              className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-600 transition-all outline-none"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </div>
+          <button className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-4 rounded-2xl font-bold hover:bg-slate-50 transition-all shadow-sm">
+            <Filter size={18} />
+          </button>
+        </div>
       </header>
 
-      {servicos.length === 0 ? (
+      {/* [ALTERADO] Agora usamos servicosFiltrados em vez de servicos */}
+      {servicosFiltrados.length === 0 ? (
         <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-          <p className="text-slate-400 font-bold">Nenhum espaço encontrado. Seja o primeiro a anunciar!</p>
-          <Link to="/registrar" className="text-indigo-600 font-black mt-4 inline-block hover:underline">Anunciar agora →</Link>
+          <p className="text-slate-400 font-bold">Nenhum resultado para "{busca}".</p>
+          <button onClick={() => setBusca('')} className="text-indigo-600 font-black mt-2 underline">Limpar busca</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {servicos.map((s, index) => (
+          {servicosFiltrados.map((s, index) => (
             <motion.div 
               key={s.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.05 }} // Delay mais rápido para busca fluida
               className="group glass-card overflow-hidden hover:shadow-2xl transition-all border-white/40 bg-white"
             >
               <Link to={`/detalhes/${s.id}`}>
-                {/* A parte da imagem que você estava montando integrada aqui */}
                 <div className="h-64 overflow-hidden relative">
                   <img 
                     src={s.imagem_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3'} 

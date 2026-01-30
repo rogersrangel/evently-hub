@@ -1,10 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer'; // Importe aqui
 import Home from './pages/Home'; // Verifique se o arquivo se chama Home.jsx
 import Explore from './pages/Explore';
 import RegisterService from './pages/RegisterService';
 import Details from './pages/Details';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile'; // Verifique se o nome do arquivo é Profile.jsx (P maiúsculo)
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -19,8 +22,11 @@ function App() {
             <Route path="/registrar" element={<RegisterService />} />
             <Route path="/detalhes/:id" element={<Details />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/perfil" element={<Profile />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
+        <Footer />
       </div>
     </Router>
   );
