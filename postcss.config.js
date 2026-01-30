@@ -1,6 +1,7 @@
+/** PostCSS config as an ES module (project uses "type": "module") */
 export default {
   plugins: {
-    '@tailwindcss/postcss': {}, // O erro pediu exatamente essa mudança
+    '@tailwindcss/postcss': {},
     autoprefixer: {},
   },
 }

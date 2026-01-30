@@ -1,70 +1,59 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowLeft, MapPin, Star, Users, CheckCircle } from 'lucide-react';
 
 export default function Details() {
-  const { id } = useParams(); // Pega o ID da URL
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchItem() {
-      const { data, error } = await supabase
-        .from('fornecedores')
-        .select('*')
-        .eq('id', id) // Busca exatamente este ID
-        .single(); // Retorna apenas um objeto, não uma lista
-
-      if (!error) setItem(data);
-      setLoading(false);
-    }
-    fetchItem();
-  }, [id]);
-
-  if (loading) return <div className="p-20 text-center">Carregando detalhes...</div>;
-  if (!item) return <div className="p-20 text-center">Fornecedor não encontrado.</div>;
+  const { id } = useParams();
+  const navigate = useNavigate();
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Grade de Imagens Estilo Profissional */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[500px] mb-8">
-        <div className="h-full">
-          <img src={item.imagens?.[0]} className="w-full h-full object-cover rounded-3xl shadow-lg" alt="Principal" />
-        </div>
-        <div className="grid grid-cols-2 gap-4 h-full">
-          {item.imagens?.slice(1, 5).map((img, idx) => (
-            <img key={idx} src={img} className="w-full h-full object-cover rounded-2xl shadow-sm hover:opacity-90 transition cursor-pointer" />
-          ))}
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-6">
+      <div className="max-w-6xl mx-auto">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="flex items-center gap-2 text-slate-400 mb-8 font-bold hover:text-indigo-600 transition-colors"
+        >
+          <ArrowLeft size={20} /> Voltar
+        </button>
 
-      <div className="flex flex-col md:flex-row gap-12">
-        <div className="flex-1">
-          <span className="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-widest">
-            {item.tipo}
-          </span>
-          <h1 className="text-5xl font-black text-gray-900 mt-4 mb-6">{item.nome}</h1>
-          <p className="text-gray-600 text-lg leading-relaxed">
-            Bem-vindo ao {item.nome}. Um espaço preparado para transformar seu evento em uma experiência inesquecível.
-            Contamos com infraestrutura completa e suporte especializado.
-          </p>
-        </div>
-
-        {/* Card de Orçamento (Sticky) */}
-        <div className="w-full md:w-96">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 sticky top-10">
-            <p className="text-sm text-gray-500 font-bold uppercase">Valor Estimado</p>
-            <p className="text-4xl font-black text-indigo-600 mt-2">R$ {item.preco}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 space-y-8">
+            <div className="h-[450px] bg-slate-200 rounded-[3rem] shadow-inner flex items-center justify-center text-slate-400 italic">
+              Galeria de Imagens do Espaço {id}
+            </div>
             
-            <hr className="my-6 border-gray-100" />
-            
-            <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 hover:shadow-lg transition-all mb-4">
-              Solicitar Orçamento
-            </button>
-            <p className="text-xs text-center text-gray-400">
-              Não cobramos taxas de reserva pelo EventlyHub.
-            </p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-10">
+              <h1 className="text-5xl font-black text-slate-900 mb-4 tracking-tighter">Espaço Premium</h1>
+              <div className="flex items-center gap-6 text-slate-500 font-medium mb-8">
+                <span className="flex items-center gap-1"><MapPin size={18}/> São Paulo, SP</span>
+                <span className="flex items-center gap-1 text-yellow-500"><Star size={18} fill="currentColor"/> 4.9</span>
+              </div>
+              <p className="text-slate-600 text-lg leading-relaxed border-t border-slate-100 pt-8">
+                Um local único com arquitetura moderna, perfeito para casamentos e eventos corporativos de alto nível.
+              </p>
+            </motion.div>
           </div>
+
+          <aside className="lg:col-span-1">
+            <div className="sticky top-32 bg-slate-900 text-white p-8 rounded-[3rem] shadow-2xl shadow-slate-300">
+              <p className="text-indigo-400 font-black uppercase tracking-widest text-[10px] mb-2">Valor Estimado</p>
+              <h2 className="text-4xl font-black italic mb-8">R$ 6.500</h2>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center justify-between text-sm border-b border-white/10 pb-4">
+                  <span className="flex items-center gap-2 opacity-60"><Users size={16}/> Capacidade</span>
+                  <span className="font-bold">250 pessoas</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-indigo-300 font-bold">
+                  <CheckCircle size={16}/> Buffet Completo Incluso
+                </div>
+              </div>
+
+              <button className="w-full bg-indigo-600 py-5 rounded-2xl font-black text-lg hover:bg-indigo-500 transition-all active:scale-95">
+                Reservar Agora
+              </button>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

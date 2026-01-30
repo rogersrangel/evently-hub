@@ -1,53 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { Plus, LayoutDashboard } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
-  // Simulando dados que viriam do banco de dados
-  const [agendamentos] = useState([
-    { id: 1, cliente: "Ana Silva", data: "15/02/2026", tipo: "Casamento", status: "Confirmado" },
-    { id: 2, cliente: "Marcos Rocha", data: "20/02/2026", tipo: "Aniversário", status: "Pendente" },
-    { id: 3, cliente: "Carla Souza", data: "10/03/2026", tipo: "Corporativo", status: "Confirmado" },
-  ]);
+  const [servicos, setServicos] = useState([]);
+
+  useEffect(() => {
+    const getData = async () => {
+      const { data } = await supabase.from('fornecedores').select('*');
+      setServicos(data || []);
+    };
+    getData();
+  }, []);
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Painel do Fornecedor</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {/* Mini cards de resumo */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Total de Reservas</p>
-          <p className="text-3xl font-bold text-indigo-600">{agendamentos.length}</p>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      <header className="flex justify-between items-center mb-12">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
+          <LayoutDashboard className="text-indigo-600" /> Meu Painel
+        </h1>
+        <Link to="/registrar" className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all">
+          <Plus size={20} /> Novo Espaço
+        </Link>
+      </header>
 
-      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="p-4 font-semibold text-gray-600">Cliente</th>
-              <th className="p-4 font-semibold text-gray-600">Data</th>
-              <th className="p-4 font-semibold text-gray-600">Tipo</th>
-              <th className="p-4 font-semibold text-gray-600">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* O MAP varre a lista e cria uma linha (tr) para cada item */}
-            {agendamentos.map((item) => (
-              <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                <td className="p-4 text-gray-800 font-medium">{item.cliente}</td>
-                <td className="p-4 text-gray-600">{item.data}</td>
-                <td className="p-4 text-gray-600">{item.tipo}</td>
-                <td className="p-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    item.status === 'Confirmado' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {servicos.map(s => (
+          <div key={s.id} className="glass-card p-8 border-white/40">
+            <h3 className="text-2xl font-black text-slate-900 mb-2">{s.nome}</h3>
+            <p className="text-slate-500 font-medium mb-4">{s.localizacao}</p>
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+              <span className="font-black text-indigo-600">R$ {s.preco}</span>
+              <span className="text-xs font-bold uppercase text-slate-400 tracking-widest">Ativo</span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

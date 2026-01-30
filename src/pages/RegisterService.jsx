@@ -1,127 +1,62 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabaseClient'; // A ponte para o banco
+import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Sparkles, CheckCircle } from 'lucide-react';
 
 export default function RegisterService() {
-  const [formData, setFormData] = useState({
-    nome: '',
-    tipo: 'buffet',
-    imagens: [] // Agora temos uma lista de imagens vazia
-  });
+  const [form, setForm] = useState({ nome: '', preco: '', descricao: '', localizacao: '' });
+  const navigate = useNavigate();
 
-  const [currentImg, setCurrentImg] = useState(''); // Guarda o link que está sendo digitado agora
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('fornecedores').insert([{ ...form, user_id: user.id }]);
+    if (!error) navigate('/dashboard');
   };
-
-  // Função para adicionar imagem na lista
-  const addImage = () => {
-    if (currentImg.trim() !== "") {
-      setFormData({
-        ...formData,
-        imagens: [...formData.imagens, currentImg] // Pega as fotos que já tinha e adiciona a nova
-      });
-      setCurrentImg(''); // Limpa o campo de digitar após adicionar
-    }
-  };
-
-  // Função para remover uma imagem específica
-  const removeImage = (indexToRemove) => {
-    setFormData({
-      ...formData,
-      imagens: formData.imagens.filter((_, index) => index !== indexToRemove)
-    });
-  };
-
-const handleSalvar = async () => {
-  if (!supabase) {
-    alert("Erro: Conexão com o banco não configurada corretamente.");
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from('fornecedores')
-    .insert([
-      { 
-        nome: formData.nome, 
-        tipo: formData.tipo, 
-        preco: parseFloat(formData.preco) || 0, // Garante que é número
-        imagens: formData.imagens 
-      }
-    ]);
-
-  if (error) {
-    alert("Erro ao salvar: " + error.message);
-  } else {
-    alert("Perfil publicado com sucesso!");
-    // Limpa o formulário após salvar
-    setFormData({ nome: '', tipo: 'buffet', imagens: [] });
-  }
-};
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-sm rounded-2xl mt-10 border border-gray-100">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Meu Portfólio</h2>
-      
-      <div className="space-y-6">
-        {/* Campo Nome */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Nome do Negócio</label>
-          <input
-            name="nome"
-            className="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            onChange={handleChange}
-            placeholder="Ex: Buffet Mágico"
-          />
-        </div>
+    <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-6">
+      <div className="max-w-2xl mx-auto">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold mb-8 transition-colors">
+          <ArrowLeft size={20} /> Voltar ao Painel
+        </button>
 
-        {/* Seção de Imagens */}
-        <div className="bg-gray-50 p-4 rounded-xl">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Adicionar Fotos (URL)</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="flex-1 p-2 border rounded-lg outline-none focus:border-indigo-500"
-              placeholder="Cole o link da foto aqui..."
-              value={currentImg}
-              onChange={(e) => setCurrentImg(e.target.value)}
-            />
-            <button 
-              type="button"
-              onClick={addImage}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-            >
-              Adicionar
-            </button>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-10 md:p-12">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
+              <Sparkles size={24} />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Anunciar Espaço</h1>
           </div>
 
-          {/* Galeria de Miniaturas (Preview) */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            {formData.imagens.map((url, index) => (
-              <div key={index} className="relative group">
-                <img 
-                  src={url} 
-                  alt="Preview" 
-                  className="h-24 w-full object-cover rounded-lg border"
-                />
-                <button
-                  onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"
-                >
-                  X
-                </button>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Título do Anúncio</label>
+              <input required className="w-full p-5 bg-white/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none transition-all" placeholder="Ex: Loft Industrial para Festas" onChange={e => setForm({...form, nome: e.target.value})} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Preço (R$)</label>
+                <input type="number" required className="w-full p-5 bg-white/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none transition-all" placeholder="5000" onChange={e => setForm({...form, preco: e.target.value})} />
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Localização</label>
+                <input required className="w-full p-5 bg-white/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none transition-all" placeholder="Cidade, UF" onChange={e => setForm({...form, localizacao: e.target.value})} />
+              </div>
+            </div>
 
-        <button 
-  onClick={handleSalvar} // Chama a função que criamos acima
-  className="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition"
->
-  Finalizar e Publicar Perfil
-</button>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Descrição</label>
+              <textarea rows="4" className="w-full p-5 bg-white/50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 outline-none transition-all" placeholder="Diferenciais do seu espaço..." onChange={e => setForm({...form, descricao: e.target.value})} />
+            </div>
+
+            <button className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl">
+              <CheckCircle size={24} /> Publicar Agora
+            </button>
+          </form>
+        </motion.div>
       </div>
     </div>
   );
