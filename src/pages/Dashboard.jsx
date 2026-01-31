@@ -1,193 +1,187 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Settings, Users, LogOut, Store, ExternalLink, Calendar, MessageCircle } from 'lucide-react';
-import CalendarView from '../components/SaaS/CalendarView';
-import FinanceiroStats from '../components/SaaS/FinanceiroStats';
+import { 
+  LayoutDashboard, 
+  Settings, 
+  Calendar, 
+  Users, 
+  LogOut, 
+  ExternalLink, 
+  PlusCircle,
+  Clock,
+  Plus
+} from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [meusServicos, setMeusServicos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [servicoAtivo, setServicoAtivo] = useState(null);
+  const [user, setUser] = useState(null);
   const [agendamentos, setAgendamentos] = useState([]);
+  const [meuEspaco, setMeuEspaco] = useState(null);
 
   useEffect(() => {
-    carregarDadosIniciais();
+    checkUser();
   }, []);
 
-  async function carregarDadosIniciais() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('fornecedores').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-      setMeusServicos(data || []);
-      if (data?.length > 0) setServicoAtivo(data[0]);
+  async function checkUser() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error || !session) {
+      navigate('/login');
+      return;
     }
-    setLoading(false);
+
+    setUser(session.user);
+    fetchDadosIniciais(session.user.id);
   }
 
-  useEffect(() => {
-    if (servicoAtivo) fetchDadosSaaS();
-  }, [servicoAtivo]);
-
-  async function fetchDadosSaaS() {
-    const { data } = await supabase.from('agendamentos').select('*').eq('fornecedor_id', servicoAtivo.id).order('data_evento', { ascending: true });
-    setAgendamentos(data || []);
-  }
-
-  // --- NOVA FUNÇÃO: ATUALIZAR STATUS ---
-  async function atualizarStatus(id, novoStatus) {
+  async function fetchDadosIniciais(userId) {
     try {
-      const { error } = await supabase
-        .from('agendamentos')
-        .update({ status: novoStatus })
-        .eq('id', id);
+      // Usamos .maybeSingle() para não disparar erro caso o usuário não tenha espaço ainda
+      const { data: servico, error: errorServico } = await supabase
+        .from('fornecedores')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (servico) {
+        setMeuEspaco(servico);
 
-      setAgendamentos(prev => prev.map(item => 
-        item.id === id ? { ...item, status: novoStatus } : item
-      ));
-    } catch (error) {
-      console.error("Erro ao atualizar:", error.message);
+        const { data: reservas } = await supabase
+          .from('agendamentos')
+          .select('*')
+          .eq('fornecedor_id', servico.id)
+          .order('created_at', { ascending: false });
+
+        setAgendamentos(reservas || []);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+    } finally {
+      // GARANTE que o loading pare, idependente de ter achado dados ou não
+      setLoading(false);
     }
   }
 
-  if (loading) return <div className="p-20 text-center font-black animate-pulse text-indigo-600">CARREGANDO...</div>;
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Validando Acesso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // TELA PARA QUEM NÃO TEM ESPAÇO CADASTRADO
+  if (!meuEspaco) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-6 flex flex-col items-center justify-center">
+        <div className="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 text-center">
+          <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <Plus size={40} />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase mb-4">Criar seu Anúncio</h2>
+          <p className="text-slate-500 font-bold mb-8 text-sm">Você ainda não possui um espaço ou serviço cadastrado em nossa plataforma.</p>
+          
+          <button 
+            onClick={() => navigate('/registrar')}
+            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100 mb-4"
+          >
+            Começar Cadastro
+          </button>
+          
+          <button onClick={handleLogout} className="text-slate-400 font-bold text-xs uppercase hover:text-red-500 transition-colors">
+            Sair da conta
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // RENDERIZAÇÃO NORMAL DO DASHBOARD (Quando tem espaço)
   return (
-    <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-4 md:px-8">
-      <div className="max-w-[1600px] mx-auto">
+    <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-6">
+      <div className="max-w-7xl mx-auto">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 text-left">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Painel de Controle</h1>
+            <p className="text-slate-500 font-bold">Bem-vindo de volta, {user?.email?.split('@')[0]}</p>
+          </div>
+          
+          <div className="flex gap-3">
+             <button 
+                onClick={() => navigate(`/p/${meuEspaco.id}`)}
+                className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl font-black text-xs uppercase text-slate-600 hover:bg-slate-100 transition-all"
+             >
+                 <ExternalLink size={16} /> Ver Página
+             </button>
+             <button 
+              onClick={() => navigate(`/editar/${meuEspaco?.id}`)}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase hover:bg-slate-900 transition-all shadow-lg shadow-indigo-100"
+             >
+               <Settings size={16} /> Editar
+             </button>
+             <button onClick={handleLogout} className="p-3 text-slate-400 hover:text-red-500 transition-colors">
+                <LogOut size={20} />
+             </button>
+          </div>
+        </header>
 
-          {/* SIDEBAR COM NAVEGAÇÃO DE LOCAIS */}
-          <aside className="lg:col-span-3 space-y-6">
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-              <div className="flex items-center justify-between mb-6 px-2">
-                <h3 className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Meus Anúncios</h3>
-                <Link to="/registrar" className="text-indigo-600 hover:scale-110 transition-transform"><Plus size={20}/></Link>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6 text-left">
+            <h2 className="flex items-center gap-2 font-black text-slate-400 uppercase text-xs tracking-widest">
+              <Calendar size={16} /> Pedidos Recentes
+            </h2>
+            
+            {agendamentos.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 p-12 rounded-[2.5rem] text-center">
+                <p className="font-bold text-slate-400">Nenhuma reserva encontrada ainda.</p>
               </div>
-              
-              <div className="space-y-2">
-                {meusServicos.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setServicoAtivo(item)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all border-2 ${servicoAtivo?.id === item.id
-                      ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                      : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-50'
-                    }`}
-                  >
-                    <img src={item.imagem_url} className="w-10 h-10 rounded-lg object-cover" />
-                    <p className="font-black text-xs truncate">{item.nome}</p>
-                  </button>
+            ) : (
+              <div className="grid gap-4">
+                {agendamentos.map((item) => (
+                  <div key={item.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                        <Users size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-900">{item.cliente_nome}</h3>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                          <Clock size={12} /> {new Date(item.data_evento).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${
+                      item.status === 'confirmado' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          <div className="space-y-6 text-left">
+            <h2 className="font-black text-slate-400 uppercase text-xs tracking-widest">Status do Espaço</h2>
+            <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
+               <p className="text-indigo-200 font-bold text-xs uppercase mb-1">Total de Reservas</p>
+               <h4 className="text-5xl font-black mb-6 tracking-tighter">{agendamentos.length}</h4>
+               <div className="w-full h-1 bg-white/20 rounded-full">
+                  <div className="w-full h-full bg-white"></div>
+               </div>
             </div>
-          </aside>
-
-          {/* CONTEÚDO PRINCIPAL */}
-          <main className="lg:col-span-9">
-            <AnimatePresence mode="wait">
-              {servicoAtivo ? (
-                <motion.div key={servicoAtivo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                  
-                  {/* TÍTULO DO LOCAL ATUAL */}
-                  <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-100">
-                        <Store size={20} />
-                      </div>
-                      <h2 className="text-xl font-black text-slate-900 tracking-tight">{servicoAtivo.nome}</h2>
-                    </div>
-                    <Link to={`/editar/${servicoAtivo.id}`} className="text-slate-400 hover:text-indigo-600 transition-colors">
-                      <Settings size={20} />
-                    </Link>
-                  </div>
-
-                  <FinanceiroStats agendamentos={agendamentos} />
-
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                    <div className="xl:col-span-2">
-                      <CalendarView fornecedorId={servicoAtivo.id} />
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* GESTÃO DE CONTATOS ATUALIZADA */}
-                      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                        <h3 className="font-black text-slate-900 flex items-center gap-2 mb-6 text-xs uppercase tracking-widest">
-                          <Users size={16} className="text-indigo-600" /> Gestão de Leads
-                        </h3>
-                        <div className="space-y-4">
-                          {agendamentos.length > 0 ? (
-                            agendamentos.slice(0, 5).map(a => (
-                              <div key={a.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <p className="font-black text-slate-900 text-sm">{a.cliente_nome}</p>
-                                    <p className="text-[10px] text-indigo-600 font-bold uppercase">{a.data_evento}</p>
-                                  </div>
-                                  <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase ${
-                                    a.status === 'confirmado' ? 'bg-green-100 text-green-600' :
-                                    a.status === 'cancelado' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
-                                  }`}>
-                                    {a.status || 'pendente'}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                  <button 
-                                    onClick={() => window.open(`https://wa.me/${a.cliente_telefone}`, '_blank')}
-                                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-slate-600 hover:bg-green-50 hover:text-green-600 transition-all"
-                                  >
-                                    <MessageCircle size={12}/> Whats
-                                  </button>
-                                  <select 
-                                    value={a.status || 'pendente'}
-                                    onChange={(e) => atualizarStatus(a.id, e.target.value)}
-                                    className="flex-1 py-2 bg-slate-900 text-white rounded-lg text-[9px] font-black px-1 outline-none"
-                                  >
-                                    <option value="pendente">Pendente</option>
-                                    <option value="confirmado">Confirmado</option>
-                                    <option value="cancelado">Cancelado</option>
-                                  </select>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-center text-slate-400 text-[10px] font-bold py-4">Sem leads novos.</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Link da Vitrine */}
-                      <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-900/20">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Link do seu Site</p>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/p/${servicoAtivo.id}`);
-                            alert("Link copiado!");
-                          }}
-                          className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase hover:bg-indigo-500 transition-all mb-4"
-                        >
-                          Copiar URL
-                        </button>
-                        <Link to={`/p/${servicoAtivo.id}`} target="_blank" className="flex items-center justify-center gap-2 text-[10px] font-black uppercase text-slate-500 hover:text-white transition-colors">
-                          Ver Vitrine <ExternalLink size={12}/>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
-                <div className="py-20 text-center bg-white rounded-[4rem] border-2 border-dashed border-slate-100">
-                  <p className="text-slate-400 font-black">Nenhum local selecionado.</p>
-                </div>
-              )}
-            </AnimatePresence>
-          </main>
+          </div>
         </div>
       </div>
     </div>

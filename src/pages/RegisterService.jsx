@@ -1,190 +1,114 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Plus, 
-  Instagram, 
-  Phone, 
-  MapPin, 
-  Type, 
-  DollarSign, 
-  ArrowLeft, 
-  Image as ImageIcon,
-  Sparkles
-} from 'lucide-react';
+import { LayoutDashboard, Calendar, Package, User } from 'lucide-react';
 
-export default function RegisterService() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  
-  const [form, setForm] = useState({
-    nome: '',
-    preco: '',
-    localizacao: '',
-    whatsapp: '',
-    instagram_handle: '',
-    imagem_url: ''
-  });
+export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [perfil, setPerfil] = useState(null);
+  const [meusAgendamentos, setMeusAgendamentos] = useState([]); // Reservas que EU fiz
+  const [pedidosRecebidos, setPedidosRecebidos] = useState([]); // Reservas que recebi no MEU anúncio
 
-  const handleCadastrar = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
+  async function fetchDashboardData() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) throw new Error("Usuário não autenticado");
-
-      // Limpa o @ do instagram se o usuário tiver colocado
-      const instaClean = form.instagram_handle.replace('@', '');
-
-      const { error } = await supabase
+      // 1. Busca se o usuário é um fornecedor
+      const { data: fornecedor } = await supabase
         .from('fornecedores')
-        .insert([{
-          ...form,
-          instagram_handle: instaClean,
-          user_id: user.id,
-          created_at: new Date()
-        }]);
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) throw error;
+      setPerfil(fornecedor);
 
-      alert("Anúncio criado com sucesso!");
-      navigate('/dashboard');
+      // 2. Busca agendamentos que o usuário fez (Visão Cliente)
+      const { data: agendamentosFeitos } = await supabase
+        .from('agendamentos')
+        .select('*, fornecedores(nome)')
+        .eq('user_id', user.id);
       
+      setMeusAgendamentos(agendamentosFeitos || []);
+
+      // 3. Se for fornecedor, busca pedidos recebidos (Visão Anunciante)
+      if (fornecedor) {
+        const { data: pedidos } = await supabase
+          .from('agendamentos')
+          .select('*')
+          .eq('fornecedor_id', fornecedor.id);
+        
+        setPedidosRecebidos(pedidos || []);
+      }
+
     } catch (error) {
-      alert("Erro ao cadastrar: " + error.message);
+      console.error("Erro ao carregar dashboard", error);
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  if (loading) return <div className="flex justify-center p-20 italic">Carregando painel...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-12 px-4">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl mx-auto"
-      >
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-slate-400 font-black text-xs uppercase mb-6 hover:text-indigo-600 transition-colors"
-        >
-          <ArrowLeft size={16} /> Voltar ao Painel
-        </button>
+    <div className="max-w-6xl mx-auto p-6 pt-32">
+      <h1 className="text-4xl font-black mb-8 tracking-tighter italic">PAINEL DE CONTROLE</h1>
 
-        <form onSubmit={handleCadastrar} className="bg-white rounded-[3rem] shadow-xl overflow-hidden border border-slate-100 text-left">
-          {/* Header */}
-          <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-indigo-600 text-white">
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter">Novo Anúncio</h1>
-              <p className="text-indigo-100 font-bold text-[10px] uppercase tracking-widest">Cadastre seu espaço ou serviço de buffet</p>
-            </div>
-            <Sparkles size={32} className="opacity-50" />
-          </div>
-
-          <div className="p-10 space-y-8">
-            
-            {/* Foto de Capa (Preview Dinâmico) */}
-            <div className="space-y-3">
-               <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1">
-                <ImageIcon size={12}/> Link da Foto Principal
-              </label>
-              <div className="relative group">
-                <div className="w-full h-48 bg-slate-100 rounded-[2rem] border-4 border-dashed border-slate-200 flex items-center justify-center overflow-hidden mb-2">
-                  {form.imagem_url ? (
-                    <img src={form.imagem_url} className="w-full h-full object-cover" alt="Preview" />
-                  ) : (
-                    <span className="text-slate-300 font-bold text-sm italic">Cole o link da foto abaixo</span>
-                  )}
-                </div>
-                <input 
-                  required
-                  value={form.imagem_url} 
-                  onChange={e => setForm({...form, imagem_url: e.target.value})}
-                  placeholder="https://exemplo.com/foto-do-local.jpg"
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none focus:ring-2 focus:ring-indigo-600 outline-none"
-                />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* COLUNA 1: STATUS DO CLIENTE (O que eu reservei) */}
+        <div className="md:col-span-2 space-y-6">
+          <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+            <h2 className="flex items-center gap-2 font-black uppercase text-xs text-slate-400 mb-6">
+              <Calendar size={16}/> Meus Pedidos de Reserva
+            </h2>
+            {meusAgendamentos.length === 0 ? (
+              <p className="text-slate-400 italic text-sm">Você ainda não fez nenhuma reserva.</p>
+            ) : (
+              <div className="space-y-4">
+                {meusAgendamentos.map(item => (
+                  <div key={item.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
+                    <div>
+                      <p className="font-bold text-slate-800">{item.fornecedores?.nome}</p>
+                      <p className="text-[10px] uppercase font-black text-slate-400">{new Date(item.data).toLocaleDateString()}</p>
+                    </div>
+                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${
+                      item.status === 'confirmado' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                    }`}>
+                      {item.status || 'Pendente'}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+          </section>
+        </div>
 
-            {/* Nome e Preço */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1"><Type size={12}/> Nome Comercial</label>
-                <input 
-                  required
-                  value={form.nome} 
-                  onChange={e => setForm({...form, nome: e.target.value})} 
-                  placeholder="Ex: Chácara Recanto Verde"
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-600 outline-none border-none" 
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1"><DollarSign size={12}/> Valor por Dia (R$)</label>
-                <input 
-                  required
-                  type="number"
-                  value={form.preco} 
-                  onChange={e => setForm({...form, preco: e.target.value})} 
-                  placeholder="800"
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-600 outline-none border-none" 
-                />
-              </div>
+        {/* COLUNA 2: STATUS DO ANUNCIANTE (Só aparece se ele tiver anúncio) */}
+        <div className="space-y-6">
+          {perfil ? (
+            <div className="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-200">
+              <p className="text-[10px] font-black uppercase opacity-70 mb-2">Seu Espaço: {perfil.nome}</p>
+              <h3 className="text-5xl font-black tracking-tighter mb-4">{pedidosRecebidos.length}</h3>
+              <p className="text-xs font-bold uppercase tracking-widest">Reservas Recebidas</p>
+              <button className="mt-6 w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase transition-all">
+                Gerenciar Anúncio
+              </button>
             </div>
-
-            {/* Localização */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1"><MapPin size={12}/> Localização (Cidade/Estado)</label>
-              <input 
-                required
-                value={form.localizacao} 
-                onChange={e => setForm({...form, localizacao: e.target.value})} 
-                placeholder="Ex: Mairiporã - SP"
-                className="w-full p-4 bg-slate-50 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-600 outline-none border-none" 
-              />
+          ) : (
+            <div className="bg-slate-100 p-8 rounded-[2rem] border-2 border-dashed border-slate-200 text-center">
+              <Package size={40} className="mx-auto text-slate-300 mb-4" />
+              <p className="text-sm font-bold text-slate-500 mb-4">Você ainda não anuncia seu espaço.</p>
+              <button onClick={() => window.location.href='/registrar'} className="text-[10px] font-black uppercase bg-indigo-600 text-white px-6 py-3 rounded-xl">
+                Criar Anúncio Agora
+              </button>
             </div>
+          )}
+        </div>
 
-            {/* Contatos Específicos do Anúncio */}
-            <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 space-y-6">
-              <p className="text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] text-center">Configurações de Contato</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1"><Phone size={12}/> WhatsApp do Anúncio</label>
-                  <input 
-                    required
-                    value={form.whatsapp} 
-                    onChange={e => setForm({...form, whatsapp: e.target.value})} 
-                    placeholder="11999999999" 
-                    className="w-full p-4 bg-white rounded-2xl font-bold border-none shadow-sm focus:ring-2 focus:ring-indigo-600" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1"><Instagram size={12}/> Instagram do Anúncio</label>
-                  <input 
-                    value={form.instagram_handle} 
-                    onChange={e => setForm({...form, instagram_handle: e.target.value})} 
-                    placeholder="@meu.espaco" 
-                    className="w-full p-4 bg-white rounded-2xl font-bold border-none shadow-sm focus:ring-2 focus:ring-indigo-600" 
-                  />
-                </div>
-              </div>
-              <p className="text-[9px] text-slate-400 font-bold text-center italic">
-                * Estes contatos aparecerão na vitrine pública deste anúncio específico.
-              </p>
-            </div>
-
-            <button 
-              disabled={loading}
-              className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xl shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
-            >
-              <Plus size={24} /> {loading ? 'CADASTRANDO...' : 'PUBLICAR ANÚNCIO'}
-            </button>
-          </div>
-        </form>
-      </motion.div>
+      </div>
     </div>
   );
 }
