@@ -26,7 +26,7 @@ function AnimatedRoutes() {
         <Route path="/editar/:id" element={<EditService />} />
         <Route path="/detalhes/:id" element={<Details />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/perfil" element={<Profile />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/editar/:id" element={<EditService />} />
         <Route path="/p/:id" element={<PublicProfile />} />
@@ -40,9 +40,9 @@ export default function App() {
     <Router>
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Navbar />
-        
+
         {/* O flex-grow garante que o Footer sempre fique no fundo da tela */}
-        <main className="flex-grow"> 
+        <main className="flex-grow">
           <AnimatedRoutes />
         </main>
 

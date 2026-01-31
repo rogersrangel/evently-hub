@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Settings, Users, LogOut, Store, ExternalLink, Calendar } from 'lucide-react';
+import { Plus, Settings, Users, LogOut, Store, ExternalLink, Calendar, MessageCircle } from 'lucide-react';
 import CalendarView from '../components/SaaS/CalendarView';
 import FinanceiroStats from '../components/SaaS/FinanceiroStats';
 
@@ -36,14 +36,30 @@ export default function Dashboard() {
     setAgendamentos(data || []);
   }
 
+  // --- NOVA FUNÇÃO: ATUALIZAR STATUS ---
+  async function atualizarStatus(id, novoStatus) {
+    try {
+      const { error } = await supabase
+        .from('agendamentos')
+        .update({ status: novoStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setAgendamentos(prev => prev.map(item => 
+        item.id === id ? { ...item, status: novoStatus } : item
+      ));
+    } catch (error) {
+      console.error("Erro ao atualizar:", error.message);
+    }
+  }
+
   if (loading) return <div className="p-20 text-center font-black animate-pulse text-indigo-600">CARREGANDO...</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-4 md:px-8">
       <div className="max-w-[1600px] mx-auto">
         
-        {/* REMOVEMOS O HEADER REPETIDO DAQUI */}
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
 
           {/* SIDEBAR COM NAVEGAÇÃO DE LOCAIS */}
@@ -70,13 +86,6 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-
-            {/* BOTÃO DE REGISTRO RÁPIDO SE ESTIVER VAZIO */}
-            {meusServicos.length === 0 && (
-              <Link to="/registrar" className="flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-100 uppercase">
-                <Plus size={16} /> Novo Anúncio
-              </Link>
-            )}
           </aside>
 
           {/* CONTEÚDO PRINCIPAL */}
@@ -106,32 +115,62 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-6">
+                      {/* GESTÃO DE CONTATOS ATUALIZADA */}
                       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                         <h3 className="font-black text-slate-900 flex items-center gap-2 mb-6 text-xs uppercase tracking-widest">
-                          <Users size={16} className="text-indigo-600" /> Contatos Recentes
+                          <Users size={16} className="text-indigo-600" /> Gestão de Leads
                         </h3>
-                        <div className="space-y-3">
-                          {agendamentos.slice(0, 3).map(a => (
-                            <div key={a.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
-                              <div>
-                                <p className="font-black text-slate-900 text-sm">{a.cliente_nome}</p>
-                                <p className="text-[10px] text-indigo-600 font-bold uppercase">{a.data_evento}</p>
+                        <div className="space-y-4">
+                          {agendamentos.length > 0 ? (
+                            agendamentos.slice(0, 5).map(a => (
+                              <div key={a.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="font-black text-slate-900 text-sm">{a.cliente_nome}</p>
+                                    <p className="text-[10px] text-indigo-600 font-bold uppercase">{a.data_evento}</p>
+                                  </div>
+                                  <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase ${
+                                    a.status === 'confirmado' ? 'bg-green-100 text-green-600' :
+                                    a.status === 'cancelado' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                                  }`}>
+                                    {a.status || 'pendente'}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => window.open(`https://wa.me/${a.cliente_telefone}`, '_blank')}
+                                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-slate-600 hover:bg-green-50 hover:text-green-600 transition-all"
+                                  >
+                                    <MessageCircle size={12}/> Whats
+                                  </button>
+                                  <select 
+                                    value={a.status || 'pendente'}
+                                    onChange={(e) => atualizarStatus(a.id, e.target.value)}
+                                    className="flex-1 py-2 bg-slate-900 text-white rounded-lg text-[9px] font-black px-1 outline-none"
+                                  >
+                                    <option value="pendente">Pendente</option>
+                                    <option value="confirmado">Confirmado</option>
+                                    <option value="cancelado">Cancelado</option>
+                                  </select>
+                                </div>
                               </div>
-                              <Calendar size={14} className="text-slate-300" />
-                            </div>
-                          ))}
+                            ))
+                          ) : (
+                            <p className="text-center text-slate-400 text-[10px] font-bold py-4">Sem leads novos.</p>
+                          )}
                         </div>
                       </div>
 
                       {/* Link da Vitrine */}
-                      <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white">
+                      <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-900/20">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Link do seu Site</p>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(`${window.location.origin}/p/${servicoAtivo.id}`);
-                            alert("Copiado!");
+                            alert("Link copiado!");
                           }}
-                          className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase hover:bg-indigo-500 transition-all mb-4 shadow-lg shadow-indigo-900/20"
+                          className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase hover:bg-indigo-500 transition-all mb-4"
                         >
                           Copiar URL
                         </button>
