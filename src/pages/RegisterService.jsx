@@ -2,13 +2,58 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Image as ImageIcon, UploadCloud, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Plus, Image as ImageIcon, UploadCloud, Loader2, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+
+// Funções de Formatação e Validação
+const formatarTelefone = (value) => {
+  if (!value) return "";
+  value = value.replace(/\D/g, "");
+  value = value.replace(/(\d{2})(\d)/, "($1) $2");
+  value = value.replace(/(\d{5})(\d)/, "$1-$2");
+  return value.substring(0, 15);
+};
+
+const formatarInstagram = (value) => {
+  return value.replace(/[^a-zA-Z0-9_.]/g, '').substring(0, 30);
+};
+
+const validarEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const validarTelefone = (telefone) => {
+  const numeros = telefone.replace(/\D/g, '');
+  return numeros.length >= 10 && numeros.length <= 11;
+};
+
+const validarPreco = (preco) => {
+  return !isNaN(preco) && parseFloat(preco) > 0;
+};
 
 export default function RegisterService() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ nome: '', preco: '', localizacao: '', whatsapp: '', instagram_handle: '', imagem_url: '' });
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ 
+    nome: '', 
+    preco: '', 
+    localizacao: '', 
+    endereco: '',
+    descricao: '',
+    capacidade_max: '',
+    whatsapp: '', 
+    instagram_handle: '', 
+    imagem_url: '',
+    comodidades: {
+      piscina: false,
+      churrasqueira: false,
+      ar_condicionado: false,
+      wifi: false,
+      cozinha: false,
+      estacionamento: false
+    }
+  });
 
   // FUNÇÃO DE UPLOAD REAL
   const handleUpload = async (e) => {
@@ -42,8 +87,30 @@ export default function RegisterService() {
 
   const handleCadastrar = async (e) => {
     e.preventDefault();
-    if (!form.imagem_url) return alert("Por favor, faça o upload de uma foto antes de publicar.");
-    
+    setError('');
+
+    // Validações
+    if (!form.nome.trim()) {
+      setError('Nome do espaço é obrigatório');
+      return;
+    }
+    if (!form.localizacao.trim()) {
+      setError('Localização é obrigatória');
+      return;
+    }
+    if (!validarPreco(form.preco)) {
+      setError('Preço deve ser maior que zero');
+      return;
+    }
+    if (!validarTelefone(form.whatsapp)) {
+      setError('WhatsApp deve ter 10 ou 11 dígitos');
+      return;
+    }
+    if (!form.imagem_url) {
+      setError('Foto é obrigatória');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,19 +119,23 @@ export default function RegisterService() {
       const { error } = await supabase
         .from('fornecedores')
         .insert([{
-          nome: form.nome,
+          nome: form.nome.trim(),
           preco: parseFloat(form.preco),
-          localizacao: form.localizacao,
-          whatsapp: form.whatsapp,
-          instagram_handle: form.instagram_handle.replace('@', ''),
+          localizacao: form.localizacao.trim(),
+          endereco: form.endereco.trim() || null,
+          descricao: form.descricao.trim() || null,
+          capacidade_max: form.capacidade_max ? parseInt(form.capacidade_max) : null,
+          whatsapp: form.whatsapp.replace(/\D/g, ''),
+          instagram_handle: formatarInstagram(form.instagram_handle),
           imagem_url: form.imagem_url,
+          comodidades: form.comodidades,
           user_id: user.id
         }]);
 
       if (error) throw error;
       navigate('/dashboard');
     } catch (error) {
-      alert("Erro ao cadastrar: " + error.message);
+      setError("Erro ao cadastrar: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -84,9 +155,17 @@ export default function RegisterService() {
           </div>
 
           <div className="p-8 space-y-6">
+            {/* MENSAGEM DE ERRO */}
+            {error && (
+              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+                <AlertCircle className="text-red-600" size={20} />
+                <p className="text-sm font-bold text-red-600">{error}</p>
+              </motion.div>
+            )}
+
             {/* ÁREA DE UPLOAD */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Foto Principal</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Foto Principal *</label>
               <div className="relative h-48 bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-100 flex items-center justify-center overflow-hidden group">
                 {form.imagem_url ? (
                   <>
@@ -104,20 +183,130 @@ export default function RegisterService() {
               </div>
             </div>
 
+            {/* INFORMAÇÕES BÁSICAS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input required placeholder="Nome do Espaço" className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" onChange={e => setForm({...form, nome: e.target.value})} />
-              <input required type="number" placeholder="Valor p/ Dia (R$)" className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" onChange={e => setForm({...form, preco: e.target.value})} />
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Nome do Espaço *</label>
+                <input 
+                  required 
+                  placeholder="Ex: Chácara Paraíso" 
+                  value={form.nome}
+                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                  onChange={e => setForm({...form, nome: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Valor por Dia (R$) *</label>
+                <input 
+                  required 
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00" 
+                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                  onChange={e => setForm({...form, preco: e.target.value})} 
+                />
+              </div>
             </div>
 
-            <input required placeholder="Localização (Cidade - Estado)" className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" onChange={e => setForm({...form, localizacao: e.target.value})} />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-slate-50 rounded-[2rem]">
-              <input required placeholder="WhatsApp" className="w-full p-4 bg-white rounded-xl font-bold border-none shadow-sm" onChange={e => setForm({...form, whatsapp: e.target.value})} />
-              <input placeholder="Instagram" className="w-full p-4 bg-white rounded-xl font-bold border-none shadow-sm" onChange={e => setForm({...form, instagram_handle: e.target.value})} />
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Localização (Cidade - Estado) *</label>
+              <input 
+                required 
+                placeholder="Ex: São Paulo - SP" 
+                value={form.localizacao}
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                onChange={e => setForm({...form, localizacao: e.target.value})} 
+              />
             </div>
 
-            <button disabled={loading || uploading} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-50">
-              {loading ? 'CADASTRANDO...' : 'PUBLICAR ANÚNCIO'}
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Endereço Completo</label>
+              <input 
+                placeholder="Ex: Rua das Flores, 123" 
+                value={form.endereco}
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                onChange={e => setForm({...form, endereco: e.target.value})} 
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Descrição do Espaço</label>
+              <textarea 
+                placeholder="Descreva seu espaço, o que oferece, ambiente..."
+                value={form.descricao}
+                rows="4"
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600 resize-none" 
+                onChange={e => setForm({...form, descricao: e.target.value})} 
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Capacidade Máxima (pessoas)</label>
+              <input 
+                type="number"
+                min="1"
+                placeholder="Ex: 50" 
+                value={form.capacidade_max}
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                onChange={e => setForm({...form, capacidade_max: e.target.value})} 
+              />
+            </div>
+
+            {/* CONTATO */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">WhatsApp *</label>
+                <input 
+                  required 
+                  placeholder="(11) 99999-9999" 
+                  value={form.whatsapp}
+                  className="w-full p-4 bg-white rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                  onChange={e => setForm({...form, whatsapp: formatarTelefone(e.target.value)})} 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Instagram</label>
+                <input 
+                  placeholder="seu_instagram" 
+                  value={form.instagram_handle}
+                  className="w-full p-4 bg-white rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
+                  onChange={e => setForm({...form, instagram_handle: formatarInstagram(e.target.value)})} 
+                />
+              </div>
+            </div>
+
+            {/* COMODIDADES */}
+            <div className="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100">
+              <label className="text-[10px] font-black text-indigo-600 uppercase ml-2 block mb-4">Comodidades Disponíveis</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { key: 'piscina', label: '🏊 Piscina' },
+                  { key: 'churrasqueira', label: '🔥 Churrasqueira' },
+                  { key: 'ar_condicionado', label: '❄️ Ar Condicionado' },
+                  { key: 'wifi', label: '📡 Wi-Fi' },
+                  { key: 'cozinha', label: '👨‍🍳 Cozinha' },
+                  { key: 'estacionamento', label: '🅿️ Estacionamento' }
+                ].map(item => (
+                  <label key={item.key} className="flex items-center gap-3 cursor-pointer p-3 bg-white rounded-xl hover:bg-indigo-50 transition-colors border border-indigo-100">
+                    <input 
+                      type="checkbox" 
+                      checked={form.comodidades[item.key]}
+                      onChange={(e) => setForm({...form, comodidades: {...form.comodidades, [item.key]: e.target.checked}})}
+                      className="w-5 h-5 accent-indigo-600 cursor-pointer"
+                    />
+                    <span className="text-sm font-bold text-slate-700">{item.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              disabled={loading || uploading} 
+              type="submit"
+              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? <><Loader2 size={20} className="animate-spin" /> CADASTRANDO...</> : <><Plus size={20} /> PUBLICAR ANÚNCIO</>}
             </button>
           </div>
         </form>
