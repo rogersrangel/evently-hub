@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Save, ArrowLeft, Loader2, Camera, AlertCircle } from 'lucide-react';
+import { Save, ArrowLeft, Loader2, Camera, AlertCircle, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const formatarTelefone = (value) => {
@@ -23,6 +23,7 @@ export default function EditService() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [accessDenied, setAccessDenied] = useState(false);
   
   const [formData, setFormData] = useState({
     nome: '',
@@ -47,18 +48,47 @@ export default function EditService() {
   }, [id]);
 
   async function fetchServico() {
-    const { data, error } = await supabase.from('fornecedores').select('*').eq('id', id).single();
-    if (error) {
-      setError('Espaço não encontrado');
-      navigate('/dashboard');
-    } else {
-      setFormData(data);
-    }
-    setLoading(false);
-  }
+    try {
+      // 1. Verifica se o usuário está logado
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/login');
+        return;
+      }
 
-  // FUNÇÃO PARA UPLOAD DE IMAGEM
-// ... imports (mesmos do código anterior)
+      // 2. Busca o espaço pelo ID
+      const { data, error } = await supabase
+        .from('fornecedores')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        setError('Espaço não encontrado');
+        navigate('/dashboard');
+        return;
+      }
+
+      // 3. VERIFICAÇÃO CRÍTICA: Se o usuário é o dono do espaço
+      if (data.user_id !== user.id) {
+        setAccessDenied(true);
+        setError('❌ Acesso negado: Este espaço pertence a outro usuário');
+        // Redireciona para dashboard após 3 segundos
+        setTimeout(() => navigate('/dashboard'), 3000);
+        return;
+      }
+
+      // 4. Se for o dono, carrega os dados normalmente
+      setFormData(data);
+      setAccessDenied(false);
+    } catch (err) {
+      console.error('Erro ao buscar espaço:', err);
+      setError('Erro ao carregar dados do espaço');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleImageUpload(e) {
     try {
@@ -67,10 +97,9 @@ export default function EditService() {
       if (!file) return;
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`; // Usando timestamp para evitar duplicados
+      const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // 1. Upload para o Storage
       const { data, error: uploadError } = await supabase.storage
         .from('imagens-servicos')
         .upload(filePath, file, {
@@ -83,7 +112,6 @@ export default function EditService() {
         throw new Error("Verifique se o bucket 'imagens-servicos' existe e é público.");
       }
 
-      // 2. Pegar a URL pública corrigida
       const { data: { publicUrl } } = supabase.storage
         .from('imagens-servicos')
         .getPublicUrl(filePath);
@@ -97,8 +125,6 @@ export default function EditService() {
       setUploading(false);
     }
   }
-
-// ... restante do componente handleUpdate (mesmo do anterior)
 
   async function handleUpdate(e) {
     e.preventDefault();
@@ -138,13 +164,60 @@ export default function EditService() {
     setSaving(false);
   }
 
-  if (loading) return <div className="p-20 text-center font-black animate-pulse text-indigo-600">CARREGANDO...</div>;
+  // TELA DE ACESSO NEGADO
+  if (accessDenied) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="min-h-screen bg-slate-50 flex items-center justify-center px-6"
+      >
+        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-8 shadow-xl border border-red-100 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="text-red-600" size={40} />
+            </div>
+            <h2 className="text-2xl font-black text-red-600 mb-2">Acesso Negado</h2>
+            <p className="text-slate-600">{error}</p>
+          </div>
+          <p className="text-sm text-slate-400 mb-6">Redirecionando para o dashboard...</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-colors"
+          >
+            Ir para Dashboard Agora
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
+  // TELA DE LOADING
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center"
+        >
+          <Loader2 className="animate-spin text-indigo-600 mx-auto" size={48} />
+          <p className="mt-4 text-lg font-bold text-slate-700">Verificando permissões...</p>
+          <p className="text-sm text-slate-400 mt-2">Carregando dados do espaço</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // FORMULÁRIO DE EDIÇÃO (só aparece se usuário for o dono)
   return (
     <div className="min-h-screen bg-slate-50 pt-32 pb-12 px-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold text-sm transition-colors">
+          <button 
+            onClick={() => navigate('/dashboard')} 
+            className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold text-sm transition-colors"
+          >
             <ArrowLeft size={18} /> Voltar
           </button>
           <h1 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Configurar Espaço</h1>
@@ -153,19 +226,29 @@ export default function EditService() {
         <form onSubmit={handleUpdate} className="space-y-6 text-left">
           
           {/* MENSAGEM DE ERRO */}
-          {error && (
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+          {error && !accessDenied && (
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3"
+            >
               <AlertCircle className="text-red-600" size={20} />
               <p className="text-sm font-bold text-red-600">{error}</p>
             </motion.div>
           )}
 
           {/* SEÇÃO DE IMAGEM */}
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center"
+          >
             <div className="relative group">
               <img 
                 src={formData.imagem_url || 'https://via.placeholder.com/400x250'} 
                 className="w-64 h-40 object-cover rounded-3xl shadow-lg transition-opacity group-hover:opacity-80"
+                alt="Imagem do espaço"
               />
               <label className="absolute inset-0 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="bg-indigo-600 p-3 rounded-full text-white shadow-xl">
@@ -175,9 +258,14 @@ export default function EditService() {
               </label>
             </div>
             <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clique na foto para alterar</p>
-          </div>
+          </motion.div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6"
+          >
             {/* Nome */}
             <div>
               <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block px-1">Nome do Espaço *</label>
@@ -274,15 +362,18 @@ export default function EditService() {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <button 
+          <motion.button 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
             type="submit" 
             disabled={saving || uploading}
             className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {saving ? <><Loader2 className="animate-spin" size={20} /> Salvando...</> : <><Save size={20} /> Atualizar Anúncio</>}
-          </button>
+          </motion.button>
         </form>
       </div>
     </div>

@@ -12,6 +12,8 @@ import NotFound from './pages/NotFound';
 import EditService from './pages/EditService';
 import PublicProfile from './pages/PublicProfile';
 import Auth from './pages/Auth'; // <-- Adicione o import da Etapa 5
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthCallback from './pages/AuthCallback';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -25,12 +27,31 @@ function AnimatedRoutes() {
         <Route path="/detalhes/:id" element={<Details />} />
         <Route path="/p/:id" element={<PublicProfile />} />
         <Route path="/login" element={<Auth />} />
+        <Route path="/auth/callback" element={<AuthCallback />} /> {/* ADICIONE ESTA LINHA */}
+
 
         {/* Privadas (Dono do Espaço) */}
-        <Route path="/registrar" element={<RegisterService />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/editar/:id" element={<EditService />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/registrar" element={
+          <ProtectedRoute>
+            <RegisterService />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/editar/:id" element={
+          <ProtectedRoute>
+            <EditService />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

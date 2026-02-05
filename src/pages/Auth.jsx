@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn, UserPlus, AlertCircle } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -22,6 +23,27 @@ export default function Auth() {
     };
     checkUser();
   }, [navigate]);
+
+  // Dentro do componente, adicione esta função:
+const handleGoogleLogin = async () => {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    
+    if (error) {
+      console.error('Erro Google OAuth:', error);
+      alert('Erro ao conectar com Google. Tente novamente.');
+    }
+    // Se não houver erro, o navegador redireciona automaticamente
+  } catch (err) {
+    console.error('Exceção no login Google:', err);
+    alert('Erro inesperado. Verifique o console.');
+  }
+};
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -78,6 +100,29 @@ export default function Auth() {
             {isSignUp ? 'Comece a anunciar seus espaços hoje.' : 'Acesse seu painel de controle.'}
           </p>
         </div>
+
+         {/* === BOTÃO GOOGLE ADICIONADO AQUI === */}
+      <div className="mb-6">
+        <button
+          onClick={handleGoogleLogin}
+          type="button"
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm hover:shadow mb-4"
+        >
+          <FcGoogle size={22} />
+          <span className="font-semibold text-slate-700">Continuar com Google</span>
+        </button>
+        
+        {/* Divisor "OU" */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white text-slate-500 font-medium">OU</span>
+          </div>
+        </div>
+      </div>
+      {/* === FIM BOTÃO GOOGLE === */}
 
         <form onSubmit={handleAuth} className="space-y-4">
           {message.text && (
