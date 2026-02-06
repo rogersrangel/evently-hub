@@ -35,16 +35,19 @@ export default function RegisterService() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ 
-    nome: '', 
-    preco: '', 
-    localizacao: '', 
+  const [form, setForm] = useState({
+    nome: '',
+    preco: '',
+    localizacao: '',
+    cidade: '',       // ADICIONE
+    estado: '',       // ADICIONE 
     endereco: '',
     descricao: '',
     capacidade_max: '',
-    whatsapp: '', 
-    instagram_handle: '', 
+    whatsapp: '',
+    instagram_handle: '',
     imagem_url: '',
+    ativo: true,      // ADICIONE (default true)
     comodidades: {
       piscina: false,
       churrasqueira: false,
@@ -94,8 +97,9 @@ export default function RegisterService() {
       setError('Nome do espaço é obrigatório');
       return;
     }
-    if (!form.localizacao.trim()) {
-      setError('Localização é obrigatória');
+    // Cidade e estado:
+    if (!form.cidade.trim() || !form.estado.trim()) {
+      setError('Cidade e Estado são obrigatórios');
       return;
     }
     if (!validarPreco(form.preco)) {
@@ -121,7 +125,9 @@ export default function RegisterService() {
         .insert([{
           nome: form.nome.trim(),
           preco: parseFloat(form.preco),
-          localizacao: form.localizacao.trim(),
+          localizacao: `${form.cidade.trim()} - ${form.estado.trim()}`,
+          cidade: form.cidade.trim(),
+          estado: form.estado.trim(),
           endereco: form.endereco.trim() || null,
           descricao: form.descricao.trim() || null,
           capacidade_max: form.capacidade_max ? parseInt(form.capacidade_max) : null,
@@ -129,6 +135,7 @@ export default function RegisterService() {
           instagram_handle: formatarInstagram(form.instagram_handle),
           imagem_url: form.imagem_url,
           comodidades: form.comodidades,
+          ativo: true,
           user_id: user.id
         }]);
 
@@ -170,7 +177,7 @@ export default function RegisterService() {
                 {form.imagem_url ? (
                   <>
                     <img src={form.imagem_url} className="w-full h-full object-cover" alt="Preview" />
-                    <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full"><CheckCircle2 size={16}/></div>
+                    <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full"><CheckCircle2 size={16} /></div>
                   </>
                 ) : (
                   <div className="text-center">
@@ -187,69 +194,91 @@ export default function RegisterService() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Nome do Espaço *</label>
-                <input 
-                  required 
-                  placeholder="Ex: Chácara Paraíso" 
+                <input
+                  required
+                  placeholder="Ex: Chácara Paraíso"
                   value={form.nome}
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                  onChange={e => setForm({...form, nome: e.target.value})} 
+                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                  onChange={e => setForm({ ...form, nome: e.target.value })}
                 />
               </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Valor por Dia (R$) *</label>
-                <input 
-                  required 
-                  type="number" 
+                <input
+                  required
+                  type="number"
                   step="0.01"
                   min="0"
-                  placeholder="0.00" 
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                  onChange={e => setForm({...form, preco: e.target.value})} 
+                  placeholder="0.00"
+                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                  onChange={e => setForm({ ...form, preco: e.target.value })}
                 />
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Localização (Cidade - Estado) *</label>
-              <input 
-                required 
-                placeholder="Ex: São Paulo - SP" 
-                value={form.localizacao}
-                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                onChange={e => setForm({...form, localizacao: e.target.value})} 
+            {/* Cidade e Estado (separados para melhor filtro) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Cidade *</label>
+                <input
+                  required
+                  placeholder="Ex: São Paulo"
+                  value={form.cidade}
+                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                  onChange={e => setForm({ ...form, cidade: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Estado (UF) *</label>
+                <input
+                  required
+                  placeholder="Ex: SP"
+                  maxLength={2}
+                  value={form.estado}
+                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600 uppercase"
+                  onChange={e => setForm({ ...form, estado: e.target.value.toUpperCase() })}
+                />
+              </div>
+            </div>
+
+            {/* Campo localizacao original (opcional, para manter compatibilidade) */}
+            <div className="hidden">
+              <input
+                value={`${form.cidade} - ${form.estado}`}
+                readOnly
               />
             </div>
 
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Endereço Completo</label>
-              <input 
-                placeholder="Ex: Rua das Flores, 123" 
+              <input
+                placeholder="Ex: Rua das Flores, 123"
                 value={form.endereco}
-                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                onChange={e => setForm({...form, endereco: e.target.value})} 
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                onChange={e => setForm({ ...form, endereco: e.target.value })}
               />
             </div>
 
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Descrição do Espaço</label>
-              <textarea 
+              <textarea
                 placeholder="Descreva seu espaço, o que oferece, ambiente..."
                 value={form.descricao}
                 rows="4"
-                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600 resize-none" 
-                onChange={e => setForm({...form, descricao: e.target.value})} 
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600 resize-none"
+                onChange={e => setForm({ ...form, descricao: e.target.value })}
               />
             </div>
 
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Capacidade Máxima (pessoas)</label>
-              <input 
+              <input
                 type="number"
                 min="1"
-                placeholder="Ex: 50" 
+                placeholder="Ex: 50"
                 value={form.capacidade_max}
-                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                onChange={e => setForm({...form, capacidade_max: e.target.value})} 
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                onChange={e => setForm({ ...form, capacidade_max: e.target.value })}
               />
             </div>
 
@@ -257,21 +286,21 @@ export default function RegisterService() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">WhatsApp *</label>
-                <input 
-                  required 
-                  placeholder="(11) 99999-9999" 
+                <input
+                  required
+                  placeholder="(11) 99999-9999"
                   value={form.whatsapp}
-                  className="w-full p-4 bg-white rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                  onChange={e => setForm({...form, whatsapp: formatarTelefone(e.target.value)})} 
+                  className="w-full p-4 bg-white rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                  onChange={e => setForm({ ...form, whatsapp: formatarTelefone(e.target.value) })}
                 />
               </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 block mb-2">Instagram</label>
-                <input 
-                  placeholder="seu_instagram" 
+                <input
+                  placeholder="seu_instagram"
                   value={form.instagram_handle}
-                  className="w-full p-4 bg-white rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600" 
-                  onChange={e => setForm({...form, instagram_handle: formatarInstagram(e.target.value)})} 
+                  className="w-full p-4 bg-white rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-indigo-600"
+                  onChange={e => setForm({ ...form, instagram_handle: formatarInstagram(e.target.value) })}
                 />
               </div>
             </div>
@@ -289,10 +318,10 @@ export default function RegisterService() {
                   { key: 'estacionamento', label: '🅿️ Estacionamento' }
                 ].map(item => (
                   <label key={item.key} className="flex items-center gap-3 cursor-pointer p-3 bg-white rounded-xl hover:bg-indigo-50 transition-colors border border-indigo-100">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={form.comodidades[item.key]}
-                      onChange={(e) => setForm({...form, comodidades: {...form.comodidades, [item.key]: e.target.checked}})}
+                      onChange={(e) => setForm({ ...form, comodidades: { ...form.comodidades, [item.key]: e.target.checked } })}
                       className="w-5 h-5 accent-indigo-600 cursor-pointer"
                     />
                     <span className="text-sm font-bold text-slate-700">{item.label}</span>
@@ -301,8 +330,8 @@ export default function RegisterService() {
               </div>
             </div>
 
-            <button 
-              disabled={loading || uploading} 
+            <button
+              disabled={loading || uploading}
               type="submit"
               className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >

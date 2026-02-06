@@ -3,40 +3,62 @@
 ```markdown
 # 🗄️ Scripts do Banco
 
-Execute no **SQL Editor** do Supabase:
+Execute no **SQL Editor** do Supabase **NA ORDEM INDICADA**:
 
-## 1. Tabelas
+## 1. TABELAS (Execute primeiro)
 
-### Profiles
+### 1.1 Profiles (Perfis de Usuário) - ATUALIZADA
 ```sql
-CREATE TABLE profiles (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   nome TEXT,
   telefone TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
+  cpf TEXT,
+  endereco TEXT,
+  cidade TEXT,
+  estado CHAR(2),
+  cep TEXT,
+  avatar_url TEXT,
+  bio TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
 Fornecedores
 
-CREATE TABLE fornecedores (
+CREATE TABLE IF NOT EXISTS fornecedores (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id) NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   nome TEXT NOT NULL,
-  preco DECIMAL(10,2) NOT NULL,
+  descricao TEXT,
+  preco DECIMAL(10,2) NOT NULL CHECK (preco >= 0),
+  endereco TEXT,
+  cidade TEXT,
+  estado CHAR(2),
+  capacidade_max INTEGER CHECK (capacidade_max > 0),
+  whatsapp TEXT,
   imagem_url TEXT,
-  comodidades JSONB DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT NOW()
+  comodidades JSONB DEFAULT '{}'::jsonb,
+  ativo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
 Agendamentos
 
-CREATE TABLE agendamentos (
+CREATE TABLE IF NOT EXISTS agendamentos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  fornecedor_id UUID REFERENCES fornecedores(id) NOT NULL,
+  fornecedor_id UUID REFERENCES fornecedores(id) ON DELETE CASCADE NOT NULL,
   cliente_email TEXT NOT NULL,
+  cliente_nome TEXT NOT NULL,
+  cliente_telefone TEXT,
   data_reserva DATE NOT NULL,
-  status TEXT DEFAULT 'pendente',
-  created_at TIMESTAMP DEFAULT NOW()
+  horario_inicio TIME NOT NULL,
+  horario_fim TIME NOT NULL,
+  status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente', 'confirmado', 'cancelado', 'concluido')),
+  valor_total DECIMAL(10,2) NOT NULL CHECK (valor_total >= 0),
+  observacoes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
 2. Índices

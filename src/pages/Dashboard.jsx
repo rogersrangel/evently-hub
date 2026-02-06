@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  LogOut, 
-  TrendingUp, 
+import {
+  LogOut,
+  TrendingUp,
   MapPin,
   PlusCircle,
   Edit2,
@@ -35,7 +35,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       setError('');
-      
+
       // 1. Verificar Usuário
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       if (authError || !authUser) {
@@ -50,17 +50,17 @@ export default function Dashboard() {
         .select('*')
         .eq('user_id', authUser.id)
         .maybeSingle();
-      
+
       if (fError) console.error('Erro ao buscar fornecedor:', fError);
       setFornecedor(fData);
 
       // 3. Buscar Reservas que EU fiz (Cliente)
       const { data: aCliente, error: acError } = await supabase
         .from('agendamentos')
-        .select('*, fornecedores(nome, localizacao)')
+        .select('*, fornecedores(nome, localizacao, cidade, estado)')
         .eq('user_id', authUser.id)
         .order('data_evento', { ascending: false });
-      
+
       if (acError) console.error('Erro ao buscar agendamentos cliente:', acError);
       setAgendamentosComoCliente(aCliente || []);
 
@@ -71,7 +71,7 @@ export default function Dashboard() {
           .select('*')
           .eq('fornecedor_id', fData.id)
           .order('data_evento', { ascending: false });
-        
+
         if (aaError) console.error('Erro ao buscar agendamentos anunciante:', aaError);
         setPedidosComoAnunciante(aAnunciante || []);
       }
@@ -110,7 +110,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 pt-28 pb-12 px-4">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* HEADER */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
           <div>
@@ -121,14 +121,14 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-3">
             {!fornecedor && (
-              <button 
+              <button
                 onClick={() => navigate('/registrar')}
                 className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase hover:shadow-lg hover:shadow-indigo-200 transition-all active:scale-95"
               >
                 <PlusCircle size={18} /> Anunciar Espaço
               </button>
             )}
-            <button 
+            <button
               onClick={handleLogout}
               className="p-3 bg-white text-red-500 rounded-2xl border border-slate-200 hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
               title="Sair"
@@ -151,14 +151,23 @@ export default function Dashboard() {
             <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-300">
               <div className="flex flex-col md:flex-row gap-8 p-8 items-stretch">
                 <div className="w-full md:w-64 h-64 rounded-[2rem] overflow-hidden flex-shrink-0">
-                  <img src={fornecedor.imagem_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={fornecedor.nome}/>
+                  <img src={fornecedor.imagem_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={fornecedor.nome} />
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <span className="bg-gradient-to-r from-indigo-100 to-indigo-50 text-indigo-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block">✓ Espaço Ativo</span>
+                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block ${fornecedor.ativo
+                      ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700'
+                      : 'bg-gradient-to-r from-red-100 to-red-50 text-red-700'
+                      }`}>
+                      {fornecedor.ativo ? '✓ Espaço Ativo' : '✗ Espaço Inativo'}
+                    </span>
                     <h2 className="text-4xl font-black text-slate-900 mb-3">{fornecedor.nome}</h2>
                     <p className="flex items-center gap-2 text-slate-600 font-bold text-sm mb-6">
-                      <MapPin size={16} className="text-indigo-600"/> {fornecedor.localizacao}
+                      <MapPin size={16} className="text-indigo-600" />
+                      {fornecedor.cidade && fornecedor.estado
+                        ? `${fornecedor.cidade}, ${fornecedor.estado}`
+                        : fornecedor.localizacao || 'Localização não informada'
+                      }
                     </p>
                     {fornecedor.descricao && <p className="text-slate-600 font-medium text-sm mb-6 line-clamp-2">{fornecedor.descricao}</p>}
                   </div>
@@ -169,7 +178,7 @@ export default function Dashboard() {
                     </div>
                     <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-[1.5rem] flex-1">
                       <p className="text-[10px] font-black text-indigo-700 uppercase">Preço/Dia</p>
-                      <p className="text-3xl font-black text-indigo-700 mt-2">R$ {parseFloat(fornecedor.preco).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                      <p className="text-3xl font-black text-indigo-700 mt-2">R$ {parseFloat(fornecedor.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="flex flex-col gap-2">
                       <button onClick={() => navigate(`/editar/${fornecedor.id}`)} className="p-3 bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 rounded-xl transition-all font-bold" title="Editar">
@@ -207,11 +216,10 @@ export default function Dashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
+                className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === tab.id
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                  }`}
               >
                 {tab.icon} {tab.label}
               </button>
@@ -221,13 +229,13 @@ export default function Dashboard() {
 
         {/* CONTENT TABS */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} key={activeTab}>
-          
+
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
               {/* STATS */}
               {fornecedor && <FinanceiroStats agendamentos={pedidosComoAnunciante} />}
-              
+
               {/* MINHA S RESERVAS COMO CLIENTE */}
               {agendamentosComoCliente.length > 0 && (
                 <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
@@ -240,11 +248,14 @@ export default function Dashboard() {
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <p className="font-black text-slate-900 text-sm uppercase">{reserva.fornecedores?.nome}</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">{reserva.fornecedores?.localizacao}</p>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                            reserva.status === 'confirmado' ? 'bg-emerald-100 text-emerald-700' : reserva.status === 'cancelado' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">
+                              {reserva.fornecedores?.cidade && reserva.fornecedores?.estado
+                                ? `${reserva.fornecedores.cidade}, ${reserva.fornecedores.estado}`
+                                : reserva.fornecedores?.localizacao || ''
+                              }
+                            </p>                          </div>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${reserva.status === 'confirmado' ? 'bg-emerald-100 text-emerald-700' : reserva.status === 'cancelado' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
                             {reserva.status}
                           </span>
                         </div>
@@ -307,9 +318,8 @@ export default function Dashboard() {
                           <td className="p-4 font-bold text-slate-600">{new Date(agendamento.data_evento).toLocaleDateString('pt-BR')}</td>
                           <td className="p-4 font-black text-indigo-600">R$ {parseFloat(agendamento.valor_total || 0).toLocaleString('pt-BR')}</td>
                           <td className="p-4">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                              agendamento.status === 'confirmado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${agendamento.status === 'confirmado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                              }`}>
                               {agendamento.status}
                             </span>
                           </td>
