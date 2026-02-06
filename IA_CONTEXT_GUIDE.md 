@@ -1,0 +1,175 @@
+# 🧠 GUIA DE CONTEXTO PARA IA - EventlyHub 2026
+
+**OBJETIVO:** Este arquivo mantém a memória do projeto para que a IA possa ajudar consistentemente sem perder contexto.
+
+## 📋 INFORMAÇÕES CRÍTICAS DO PROJETO
+
+### 🎯 Status Atual (Fevereiro 2026)
+
+
+### 🔧 Stack Tecnológica 2026
+- **Frontend:** React 19 + Vite 7 + Tailwind 4 + Framer Motion
+- **Backend:** Supabase (PostgreSQL + Auth + Storage)
+- **Auth:** Google OAuth + Email/Password
+- **Deploy:** Otimizado para Vercel
+- **Estilo:** Componentes animados, design moderno
+
+### 🚨 PROBLEMAS JÁ RESOLVIDOS (NÃO REPETIR)
+1. ✅ **RLS Policies** - Todas configuradas (10 policies)
+2. ✅ **ProtectedRoute** - Componente criado e funcionando
+3. ✅ **Editar espaço alheio** - Verificação implementada no EditService.jsx
+4. ✅ **Google OAuth** - Configurado e testado
+5. ✅ **Documentação simplificada** - 4 arquivos .md limpos
+
+### 📁 ESTRUTURA ATUAL DO PROJETO
+
+evently-hub/
+├── src/
+│ ├── components/
+│ │ ├── Navbar.jsx
+│ │ ├── Footer.jsx
+│ │ └── ProtectedRoute.jsx ✅ SEGURANÇA
+│ ├── pages/
+│ │ ├── Home.jsx
+│ │ ├── Auth.jsx ✅ GOOGLE OAUTH
+│ │ ├── Dashboard.jsx
+│ │ ├── EditService.jsx ✅ OWNER VERIFICATION
+│ │ ├── AuthCallback.jsx ✅ OAUTH CALLBACK
+│ │ └── ...
+│ └── lib/
+│ └── supabaseClient.js ✅ CONFIGURADO
+├── .env.local ⚠️ NÃO COMMITAR
+├── README.md 📄 SIMPLES
+├── SETUP.md ⚙️ GUIAS
+├── DATABASE.md 🗄️ SQL
+├── DEPLOY.md 🚀 PRODUÇÃO
+└── IA_CONTEXT_GUIDE.md 🧠 VOCÊ ESTÁ AQUI
+
+
+### 👤 ESTADO DO USUÁRIO (rogersrangel)
+- **Nível:** Iniciante/intermediário em React
+- **Preferência:** Explicações passo a passo
+- **Foco atual:** MVP funcional, não otimizações avançadas
+- **Estilo:** Gosta de testes após cada etapa
+
+### 🔄 FLUXO DE TRABALHO PREFERIDO
+1. **Explicar conceito** (simples, com analogias)
+2. **Mostrar código** (pronto para copiar)
+3. **Passo a passo** (sequência clara)
+4. **Testar imediatamente** (validar funcionamento)
+5. **Resumir** (checklist do que foi feito)
+
+### ⚠️ REGRAS DE SEGURANÇA
+- **NUNCA** sugerir commitar `.env.local`
+- **SEMPRE** verificar RLS antes de queries
+- **CONFIRMAR** owner verification em edits/deletes
+- **MANTER** Google OAuth configurado
+
+### 🎨 PADRÕES DE CÓDIGO
+- **Tailwind classes:** Espaçamento consistente, cores do tema
+- **Componentes:** Nome claro, responsabilidade única
+- **Estado:** useState para simples, useEffect com cleanup
+- **Erros:** Try/catch com mensagens amigáveis
+- **Loading states:** Spinners com texto descritivo
+
+### 🔍 CHECKLIST ANTES DE SUGERIR MUDANÇAS
+Antes de sugerir qualquer nova feature ou mudança, verificar:
+- [ ] O Supabase Auth ainda funciona?
+- [ ] As RLS Policies ainda protegem?
+- [ ] O ProtectedRoute está aplicado?
+- [ ] Owner verification no EditService?
+- [ ] Google OAuth configurado?
+
+### 📊 METAS DE CURTO PRAZO (MVP)
+1. [x] Sistema de autenticação completo
+2. [x] CRUD de espaços com segurança
+3. [x] Sistema de reservas básico
+4. [ ] Sistema de pagamentos (Pix)
+5. [ ] Notificações por email
+6. [ ] Dashboard com analytics
+
+### 🚀 PRÓXIMOS PASSOS PRIORITÁRIOS
+**Prioridade 1 (Esta semana):**
+- [ ] Adicionar sistema de pagamentos com Pix
+- [ ] Melhorar dashboard com estatísticas
+- [ ] Adicionar avaliações de espaços
+
+**Prioridade 2 (Próxima semana):**
+- [ ] Sistema de notificações por email
+- [ ] Filtros avançados na busca
+- [ ] Upload múltiplo de imagens
+
+### 💡 DICAS PARA EXPLICAÇÕES EFETIVAS
+- Usar **analogias do mundo real** (ex: RLS = porteiro do prédio)
+- Mostrar **código pronto para copiar**, não apenas conceitos
+- Incluir **testes imediatos** após cada mudança
+- Manter **checklists visuais** (✅/❌)
+- Referenciar **arquivos existentes** pelo nome
+
+### 🔄 FREQUÊNCIA DE REVISÃO DO CÓDIGO
+- **A cada 5 mensagens:** Revisar estrutura geral
+- **A cada mudança de feature:** Verificar arquivos afetados
+- **Antes de sugerir grandes mudanças:** Analisar todo o código relevante
+- **Sempre:** Manter referência a este guia
+
+### 📝 EXEMPLO DE RESPOSTA IDEAL
+
+🎯 OBJETIVO: Explicar [conceito] de forma simples
+
+🔍 ANÁLISE: No seu código, em [arquivo], temos [situação]
+
+🛠️ SOLUÇÃO: Vamos modificar [parte específica]
+
+📋 PASSO A PASSO:
+
+Abra [arquivo]
+Adicione [código]
+Teste com [comando]
+✅ VERIFICAÇÃO: Depois, teste [cenário]
+
+🎉 RESULTADO: Agora [benefício alcançado]
+
+
+### 🚨 LEMBRETES PERMANENTES
+- O usuário é **iniciante**, prefere simplicidade
+- **Google OAuth já está funcionando** - não reconfigurar
+- **Segurança já implementada** - não quebrar RLS
+- **Design já moderno** - manter consistência
+- **Testar cada etapa** - não pular validações
+
+### 📅 HISTÓRICO DE DECISÕES
+- **2026-02-01:** Decidido manter Supabase Auth (não Clerk)
+- **2026-02-01:** Google OAuth configurado e testado
+- **2026-02-01:** Simplificada documentação (4 arquivos .md)
+- **2026-02-01:** Implementado owner verification no EditService
+- **2026-02-01:** Criado este guia de contexto para IA
+
+---
+
+## 🔄 INSTRUÇÕES PARA A IA
+
+**LEIA ESTE ARQUIVO:** 
+- ✅ A cada nova conversa
+- ✅ Antes de sugerir grandes mudanças  
+- ✅ Se o usuário mencionar "perdeu o contexto"
+- ✅ A cada 5-10 mensagens para manter memória
+
+**ATUALIZE ESTE ARQUIVO:**
+- Quando novas features forem implementadas
+- Quando decisões importantes forem tomadas
+- Quando a stack ou estrutura mudar
+- Quando problemas forem resolvidos
+
+**USE ESTE CONTEXTO PARA:**
+- Entender o estado atual do projeto
+- Saber quais problemas já foram resolvidos
+- Manter consistência nas explicações
+- Evitar repetir soluções já implementadas
+- Seguir o fluxo de trabalho preferido do usuário
+
+**NUNCA IGNORE:**
+- ✅ O nível de experiência do usuário
+- ✅ As preferências de explicação passo a passo  
+- ✅ A necessidade de testar após cada mudança
+- ✅ As decisões arquiteturais já tomadas
+
